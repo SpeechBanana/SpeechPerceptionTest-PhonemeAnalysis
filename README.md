@@ -5,7 +5,7 @@ Scripts for analyzing phoneme errors from speech perception tests
 October 2021
 
 Credits
-- scLite & scKit (alignment via dynamic programming)
+- scLite (Speech Recognition Scoring Toolkit - SCTK) (alignment via dynamic programming)
 - Elad Sagi (feature analysis for phonemegram)
 - Seung-Ho "Ben" Bae (phonemegram and testing)
 - Lydia Wang (alignment and testing)
