@@ -1,18 +1,21 @@
 # SpeechPerceptionTest-PhonemeAnalysis
 Scripts for analyzing phoneme errors from speech perception tests
 
+Visualization of Speech Perception Analysis via Phoneme Alignment: a pilot study 
+J. Tilak Ratnanather, Lydia C. Wang, Seung-Ho Bae, Erin R. O’Neill, Elad Sagi, Daniel J. Tward1
+To appear in Frontiers in Neurology: Digital Hearing Healthcare
 
 October 2021
 
 Credits
 - scLite (Speech Recognition Scoring Toolkit - SCTK) (alignment via dynamic programming)
-- Elad Sagi (feature analysis for phonemegram)
-- Seung-Ho "Ben" Bae (phonemegram and testing)
+- Tilak Ratnanather (concept, editing and testing)
 - Lydia Wang (alignment and testing)
+- Seung-Ho "Ben" Bae (phonemegram and testing)
+- Elad Sagi (feature analysis for phonemegram)
+- Daniel Tward (concept)
 - Zachary Heiman (costs for alignment)
 - Nole Lin (original design)
-- Tilak Ratnanather (concept, editing and testing)
-- Daniel Tward (concept)
 
 Main scripts are
 
