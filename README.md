@@ -13,7 +13,6 @@ Credits
 - Nole Lin (original design)
 - Tilak Ratnanather (concept, editing and testing)
 - Daniel Tward (concept)
-- Erin O'Neill (validation dataset)
 
 Main scripts are
 
@@ -24,12 +23,7 @@ Bernstein2021
 - from Table 1 of Bernstein et al. (2021)
 
 Validation 
-- data from O'Neill et al. (2021)
-- Stimulus from Original BEL Corpus Text.xlsx
-- Responses from Responses.xlsx
-- Original Stimulus-Response pairs saved as originalpairs
-- Random Stimulus-Response pairs saved as randompairs
-- Non-dupliated Stimulus-Response pairs saved as reducedpairs
+- not included
 
 Working files
 - featU for phonemegram
