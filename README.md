@@ -31,7 +31,8 @@ Validation
 Working files
 - featU for phonemegram
 - info2 for phonemegram
-- phonene_analysis_fscore
+- phoneme_analysis_fscore
 - phoxyz are the phonemes
 - splitCMUdict is the CMU dictionary with lexicals removed
-- variables 
+- variables
+- AlignPhonemes 
