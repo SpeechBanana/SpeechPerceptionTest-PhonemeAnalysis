@@ -89,5 +89,6 @@ diary(dfile)
 
 diary on
 wpo=false;
-phoneme_analysis_fscore(composite,wpo);
+mult=false;
+phoneme_analysis_fscore(composite,wpo,mult);
 diary('off')
