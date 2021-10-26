@@ -1,8 +1,6 @@
 %formatted for running multiple large data sets
 
 clc;
-close all;
-clear all;
 
 LBStimulus1 = {'The weight of the package was seen on the high scale'};
 LBResponse1 = {'The weight of axe was seen Serbia'};
