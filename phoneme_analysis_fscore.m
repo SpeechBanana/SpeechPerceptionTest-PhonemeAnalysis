@@ -1,6 +1,5 @@
 %patched BEST! Time/case/phoneme stats, fast, advanced cost
-%Sept 2021 - commented out lines for writing files for validation
-function [pScores] = phoneme_analysis_fscore(allData,wpo)
+function [pScores] = phoneme_analysis_fscore(allData,wpo,mult)
 
 %phoxyz.mat contains a map from phoneme to coordinate for phonemic error
 %visualization
@@ -125,8 +124,9 @@ for casenum = 1:length(allData)
             end
         end
         
+        %%%Added Sept 2021 for clarity (and debugging)
         fprintf(['Name: ',Name,'. Stimulus Number: ',num2str(z),' out of ',num2str(num),' stimuli.'])
-        fprintf('\nStimulus: %s\n', Stim{z});
+	    fprintf('\nStimulus: %s\n', Stim{z});
 		fprintf('Response: %s\n\n', Response{z});
 		real2 = {};
 		for k = 1:length(reals{z})
@@ -156,7 +156,7 @@ for casenum = 1:length(allData)
 		uniqr = strsplit(stimphonemes{z});
 		totalnum = totalnum + length(uniqr);
 		
-		%uniqr2 holds all of the unique real phonemes.
+		% uniqr2 holds all of the unique real phonemes.
 		uniqr2 = unique(uniqr); % at this point we lose the order
 		
 		% now we split up the phonemes into cells
@@ -192,6 +192,7 @@ for casenum = 1:length(allData)
 			uniqg = strsplit(responsephonemes{z});
 			allUniqPh = unique(uniqr2);
 			aligned = vertcat(uniqg, uniqr);
+            numberofalignments = 0;
         else
             responsephonemes{z} = strjoin(response2);
             uniqg = strsplit(responsephonemes{z});
@@ -200,10 +201,18 @@ for casenum = 1:length(allData)
             totalresponse = totalresponse + length(uniqg);
             
             %!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            [aligned] = AlignPhonemes(uniqr,uniqg,consdict,vowdict,mannerdict);
+            [aligned,numberofalignments] = AlignPhonemes(uniqr,uniqg,consdict,vowdict,mannerdict,mult);
             %!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         end
-        
+        %%Added October 2021
+%         if (numberofalignments > 1)
+%            fileID6 = fopen(['StimRespWithMultAligns.txt'],'a');
+%            fprintf(fileID6,['Name: ',Name,'. Stimulus Number: ',num2str(z),' out of ',num2str(num),' stimuli.'])
+% 	       fprintf(fileID6,'\nStimulus: %s\n', Stim{z});
+% 		   fprintf(fileID6,'Response: %s\n\n', Response{z});
+%            fclose(fileID6);
+%         end    
+            
 		responseph = aligned(1,:);
 		stimph = aligned(2,:);
         disp(flip(aligned))
@@ -448,7 +457,6 @@ for casenum = 1:length(allData)
     vowel_place = [3;2;2;3;2;2;1;2;1;1;1;3;3;3;3];
     vowel_length = [1;1;1;1;2;2;1;1;2;1;2;2;2;1;2];
 
-    %vowel_matrix_cut = vowel_matrix(:,1:15);
     vowelheight_fm = featU(vowel_matrix,vowel_height);
     vowelheight_it = info2(vowelheight_fm);
     %calculate the stiminfo from the counts found in the feature matrix
@@ -513,7 +521,7 @@ for casenum = 1:length(allData)
     vowellength_score = 100*(vowellength_it/vowellength_stiminfo);
     pm_values(7) = vowellength_score;
     
-% % %     %%%Added Sept 2021
+      
 % % %     %%%Information Transfer Analysis for each phoneme from 
 % % %     %%%vowel_matrix and consonant_matrix which has already been computed.
 % % %     %%%For each phoneme compute - sum_k (p_k)*log2(p_k) where p_k 
@@ -521,7 +529,7 @@ for casenum = 1:length(allData)
 % % %     %%%k is an index of summation that represents each possible 
 % % %     %%%substitution error
 % % %     %%%Save the numbers in a data file
-% 
+
 %     vphsum = zeros(1,15);
 %     for v=1:15
 %         vphsum(v) = vphsum(v)+sum(vowel_matrix(v,1:16));

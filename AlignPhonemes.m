@@ -1,6 +1,5 @@
 % patched BEST! Advanced cost functions
-%Sept 2021 - commented out lines for writing files for validation
-function [bestalign] = AlignPhonemes(X,Y,consdict,vowdict,mannerdict)
+function [bestalign,numberofalignments] = AlignPhonemes(X,Y,consdict,vowdict,mannerdict,mult)
 % keyboard
 %X = {'a','b','j', 'd','e','f'};
 %Y = {'b', 'a'};
@@ -57,14 +56,11 @@ for i = 1 : lenX
         [costdel, delInd] = del_cost(P{i,j+1}); %cost if you deleted X{i}
         [costins, insInd] = ins_cost(P{i+1,j}); %cost if you inserted Y{j}
         [costsub, subInd] = sub_cost(X{i},Y{j},P{i,j}, vowdict, consdict, mannerdict);
-        P{i,j};
         allInds = [delInd,insInd,subInd];
-        
         Ddel = D(i+1-1,j+1) + costdel*(1-(i==lenX)*(1-low));
         Dins = D(i+1,j+1-1) + costins*(1-(i==lenX)*(1-low));
         Dsub = D(i+1-1,j+1-1) + costsub;
         
-        %disp('full')
         arr = [Ddel,Dins,Dsub];
         minD = min([Ddel,Dins,Dsub]);
         hold = {};
@@ -76,41 +72,34 @@ for i = 1 : lenX
         D(i+1,j+1) = minD;
         P{i+1,j+1} = hold;
     end
-    %D
 end
-% keyboard
 
 % now we compute the alignment
-i = lenX+1;
-j = lenY+1;
+seqs = find_seqs(P, lenX, lenY);
 
-%currseq is the sequence up to present
-currseq = {};
-%keep going until you hit the first element
-while i > 1 || j > 1
-    %as long as you're not already done, add the next move to currseq
-    if ~(i == 1 && j == 1)
-        currseq = [P{i,j}{1}(1),currseq];
+allalignments = cell(1, length(seqs));
+for k = 1 : length(seqs)
+        allalignments{k} = follow(seqs{k}, X, Y);
+end
+
+numberofalignments = length(allalignments);
+if length(allalignments) > 1
+    fprintf('Multiple alignments were found, specifically %d\n', length(allalignments));
+    for k = 1: length(allalignments)
+         fprintf('Option %d\n', k)
+         disp(flipud(allalignments{k}))
+         fprintf('\n')
+    end
+    if (mult == true)
+        bestchoice = input('Choose which option you want (only enter a number)\n');
+        bestalign = allalignments{bestchoice};
     else
-        break
+        bestalign = allalignments{1};
     end
-    
-    %update i and j based on the operation you just did
-    if P{i,j}{1}(1) == 3 %sub
-        i = i-1;
-        j = j-1;
-    elseif P{i,j}{1}(1) == 2 %ins
-        %i = i;
-        j = j - 1;
-    elseif P{i,j}{1}(1) == 1 %del
-        i = i - 1;
-        %j = j;
-    end
+else
+    bestalign = allalignments{1};
 end
-
-bestalign = follow(currseq,X,Y);
 end
-
 
 % below are simple costs
 function [cost, ind] = ins_cost(Parr)
@@ -141,28 +130,28 @@ end
 function [cost, ind] = sub_cost(symbol1,symbol2,Parr, vowdict, consdict, mannerdict)
 one_is_vowel = sum(symbol1(1)=='AEIOU');
 two_is_vowel = sum(symbol2(1)=='AEIOU');
-best = 3;
+best = 10;
 ind = 1;
 for i = 1 : length(Parr)
 	%initialize currcost according to whether the last op was a deletion
 	if Parr{i}(1) == 1
 		currcost = 0.5;
-	else
+    elseif Parr{i}(1) == 2
+        currcost = 0.1;
+    else
 		currcost = 0;
 	end
  
 	if xor(one_is_vowel, two_is_vowel)
-		currcost = currcost + 2;
+		currcost = currcost + 5;
 	elseif ~one_is_vowel
 		currcost = currcost + 1.75;
 		if isKey(consdict, symbol1) && sum(strcmp(symbol2, consdict(symbol1)))
-%%%Added Sept 2021
 %                 fidc = fopen('ConsPairs.txt','a');
 %                 fprintf(fidc,'%s %s\n',symbol1,symbol2);
 %                 fclose(fidc);
 			currcost = currcost - .55;
 		elseif isKey(mannerdict, symbol1) && sum(strcmp(symbol2, mannerdict(symbol1)))
-%%%Added Sept 2021
 %                 fidm = fopen('MannerPairs.txt','a');
 %                 fprintf(fidm,'%s %s\n',symbol1,symbol2);
 %                 fclose(fidm);
@@ -178,7 +167,6 @@ for i = 1 : length(Parr)
 	elseif one_is_vowel
 		currcost = currcost + 0.9;
 		if isKey(vowdict, symbol1) && sum(strcmp(symbol2, vowdict(symbol1)))
-%%%Added Sept 2021
 %                 fidv= fopen('VowPairs.txt','a');
 %                 fprintf(fidv,'%s %s\n',symbol1,symbol2);
 %                 fclose(fidv);
@@ -200,22 +188,62 @@ end
 cost = best;
 end
 
+function seqs = find_seqs(P, lenX, lenY)
+global all_seqs;
+all_seqs = {};
+%take first steps
+i = lenX+1;
+j = lenY+1;
+first = P{i,j};
+for k = 1 : length(first)
+    choice = k;
+    take_step(P, i, j, choice, []);
+    
+end
+seqs = all_seqs;
+end
+
+function take_step(P, i, j, choice, currseq)
+global all_seqs;
+if i == 1 && j == 1
+    all_seqs = [all_seqs, currseq];
+else
+    to_check = P{i,j}{choice};
+    step = to_check(1);
+    currseq = [step, currseq];
+    if step == 3 % sub
+        newi = i-1;
+        newj = j-1;
+    elseif step == 2 %ins
+        newi = i;
+        newj = j-1;
+    elseif step == 1 %del
+        newi = i-1;
+        newj = j;
+    end
+    nextchoice = to_check(2);
+    take_step(P, newi, newj, nextchoice, currseq);
+end
+    
+end
+
+
 function aligned = follow(seq,X,Y)
 % now follow the instructions
 aligned = cell(2,length(seq));
 xcount = 1;
 ycount = 1;
 for i = 1 : length(seq)
-    if seq{i} == 3 %if you're supposed to substitute
+    if seq(i) == 3 %if you're supposed to substitute
         aligned{2,i} = X{xcount};
         aligned{1,i} = Y{ycount};
         xcount = xcount + 1;
         ycount = ycount + 1;
-    elseif seq{i} == 2 %if you're supposed to insert
+    elseif seq(i) == 2 %if you're supposed to insert
         aligned{2,i} = ' ';
         aligned{1,i} = Y{ycount};
         ycount = ycount + 1;
-    elseif seq{i} == 1 %if you're supposed to delete
+    elseif seq(i) == 1 %if you're supposed to delete
         aligned{2,i} = X{xcount};
         aligned{1,i} = ' ';
         xcount = xcount + 1;
