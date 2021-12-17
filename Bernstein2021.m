@@ -1,6 +1,8 @@
 %formatted for running multiple large data sets
 
 clc;
+clear all;
+close all;
 
 LBStimulus1 = {'The weight of the package was seen on the high scale'};
 LBResponse1 = {'The weight of axe was seen Serbia'};
@@ -50,6 +52,6 @@ composite = {...
 
 diary('phoneme_analysis_output.txt')
 wpo=false;
-mult=false;
+mult=true;
 phoneme_analysis_fscore(composite,wpo,mult);
 diary('off')
