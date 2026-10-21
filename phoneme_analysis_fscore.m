@@ -1,9 +1,9 @@
 %patched BEST! Time/case/phoneme stats, fast, advanced cost
 function [pScores] = phoneme_analysis_fscore(allData,wpo,mult)
 
-%phoxyz.mat contains a map from phoneme to coordinate for phonemic error
-%visualization
-load phoxyz
+%phoxyz_map.m returns the phoneme-to-coordinate map for the three panels
+[phoxyz, diphOffset] = phoxyz_map();
+showArrows = true;   % set to false for the class version
 load splitCMUdict.mat
 load variables.mat
 
@@ -37,13 +37,13 @@ for casenum = 1:length(allData)
 	stats{casenum+1,2} = length(Stim); %for timing stats
 	
     %%%Added Sept 2021
-%     if(casenum==1)
+     if(casenum==1)
 %         fileID1 = fopen(['Phonemegram.txt'], 'w');
-%         fileID2 = fopen(['VowelF1.txt'], 'w');
-%         fileID3 = fopen(['VConsF1.txt'], 'w');
-%         fileID4 = fopen(['UConsF1.txt'], 'w'); 
+         fileID2 = fopen(['VowelF1.txt'], 'w');
+         fileID3 = fopen(['VConsF1.txt'], 'w');
+         fileID4 = fopen(['UConsF1.txt'], 'w'); 
 %         fileID5 = fopen(['Pairwise.txt'],'w');
-%     end
+     end
 %     fprintf(fileID1,'\n%s\t Stimuli\n', Name);
 %     fprintf(fileID2,'\n%s\t Stimuli\n', Name);
 %     fprintf(fileID3,'\n%s\t Stimuli\n', Name);
@@ -312,13 +312,21 @@ for casenum = 1:length(allData)
 					disp('You might have misspelled something')
 					return
 				end
-				subplot(2,2,2);
+				%subplot(2,2,2);
+                subplot(2,4,[2 3])
 				hold on
+                if showArrows && isKey(diphOffset, totalUniqPh{k})
+                    d = diphOffset(totalUniqPh{k}) - coord(1:2);
+                    d = 0.8 * d / norm(d);
+                    quiver(coord(1), coord(2), d(1), d(2), 0, 'Color', [0.45 0.45 0.45], ...
+                        'LineWidth', 1.2, 'MaxHeadSize', 0.8)
+                end
 				scatter(coord(1), coord(2), 350, totalF1(k), 'filled')
-				text(coord(1), coord(2), totalUniqPh{k}, 'Color', [219/256,147/256,112/256], 'HorizontalAlignment','center', 'VerticalAlignment','middle')
+				%text(coord(1), coord(2), totalUniqPh{k}, 'Color', [219/256,147/256,112/256], 'HorizontalAlignment','center', 'VerticalAlignment','middle')
+                text(coord(1), coord(2), totalUniqPh{k}, 'Color', labelColor(totalF1(k), gca), 'HorizontalAlignment','center', 'VerticalAlignment','middle')
                 %%%Added Sept 2021
                 %%%print scores for vowels
-                %fprintf(fileID2,"%s\t%5.2f\t%i\t%i\t%i\n",totalUniqPh{k},totalF1(k),totalTP(k),totalFP(k),totalFN(k));
+                fprintf(fileID2,"%s\t%5.2f\t%i\t%i\t%i\n",totalUniqPh{k},totalF1(k),totalTP(k),totalFP(k),totalFN(k));
             elseif ~strcmp(totalUniqPh{k}, '') % phoneme is a consonant
 				try
 					coord = phoxyz(totalUniqPh{k});
@@ -330,18 +338,20 @@ for casenum = 1:length(allData)
 					subplot(2,2,3);
 					hold on
 					scatter(coord(1), coord(2), 350, totalF1(k), 'filled')
-					text(coord(1), coord(2), totalUniqPh{k}, 'Color', [219/256,147/256,112/256], 'HorizontalAlignment','center', 'VerticalAlignment','middle')
+					%text(coord(1), coord(2), totalUniqPh{k}, 'Color', [219/256,147/256,112/256], 'HorizontalAlignment','center', 'VerticalAlignment','middle')
+                    text(coord(1), coord(2), totalUniqPh{k}, 'Color', labelColor(totalF1(k), gca), 'HorizontalAlignment','center', 'VerticalAlignment','middle')
                     %%%Added Sept 2021
                     %%%print scores for consonants (voiced)
-                    %fprintf(fileID3,"%s\t%5.2f\t%i\t%i\t%i\n",totalUniqPh{k},totalF1(k),totalTP(k),totalFP(k),totalFN(k));
+                    fprintf(fileID3,"%s\t%5.2f\t%i\t%i\t%i\n",totalUniqPh{k},totalF1(k),totalTP(k),totalFP(k),totalFN(k));
 				else
 					subplot(2,2,4);
 					hold on
 					scatter(coord(1), coord(2), 350, totalF1(k), 'filled')
-					text(coord(1), coord(2), totalUniqPh{k}, 'Color', [219/256,147/256,112/256], 'HorizontalAlignment','center', 'VerticalAlignment','middle')
+					%text(coord(1), coord(2), totalUniqPh{k}, 'Color', [219/256,147/256,112/256], 'HorizontalAlignment','center', 'VerticalAlignment','middle')
+                    text(coord(1), coord(2), totalUniqPh{k}, 'Color', labelColor(totalF1(k), gca), 'HorizontalAlignment','center', 'VerticalAlignment','middle')
                     %%%Added Sept 2021
                     %%%print scores for consonants (unvoiced)
-                    %fprintf(fileID4,"%s\t%5.2f\t%i\t%i\t%i\n",totalUniqPh{k},totalF1(k),totalTP(k),totalFP(k),totalFN(k));
+                    fprintf(fileID4,"%s\t%5.2f\t%i\t%i\t%i\n",totalUniqPh{k},totalF1(k),totalTP(k),totalFP(k),totalFN(k));
 				end
 			end
 		end
@@ -351,7 +361,8 @@ for casenum = 1:length(allData)
 
     nasality = [1;1;1;1;1;1;1;1;1;1;2;2;2;1;1;1;1;1;1;1;1;1;1;1];
     manner = [1;5;1;3;3;1;3;5;1;4;2;2;2;1;4;3;3;1;3;3;4;4;3;3];
-    voicing = [2;1;2;1;1;2;1;2;1;2;2;2;2;1;2;1;1;1;2;2;2;2;2;2];
+    %voicing = [2;1;2;1;1;2;1;2;1;2;2;2;2;1;2;1;1;1;2;2;2;2;2;2];
+    voicing = [2;1;2;2;1;2;1;2;1;2;2;2;2;1;2;1;1;1;1;2;2;2;2;2]; % DH voiced, TH unvoiced
     affrication = [1;2;1;2;2;1;2;2;1;1;1;1;1;1;1;2;2;1;2;2;1;1;2;2];
     sibilance =  [1;2;1;1;1;1;1;2;1;1;1;1;1;1;1;2;2;1;1;1;1;1;2;2];
     consonant_place = [1;2;2;1;1;3;3;2;3;2;1;2;3;1;2;2;2;2;1;1;1;2;2;2];
@@ -454,7 +465,8 @@ for casenum = 1:length(allData)
 
     vowel_height = [1;1;2;2;1;1;2;2;2;3;3;2;2;3;3];
     contour = [2;2;2;2;3;1;2;2;1;2;2;1;3;2;2];
-    vowel_place = [3;2;2;3;2;2;1;2;1;1;1;3;3;3;3];
+    %vowel_place = [3;2;2;3;2;2;1;2;1;1;1;3;3;3;3];
+    vowel_place = [3;1;2;3;2;2;1;2;1;1;1;3;3;3;3]; % AE front
     vowel_length = [1;1;1;1;2;2;1;1;2;1;2;2;2;1;2];
 
     vowelheight_fm = featU(vowel_matrix,vowel_height);
@@ -572,38 +584,38 @@ for casenum = 1:length(allData)
 %     end
 %     save cbit
     
-    subplot(2,2,1);
-    histvals = zeros(1,10);
-    hold on
-    for i = 1:10
-        histvals(i) = pm_values(i);
-        single = bar(i,histvals(i));
-        set(single, 'LineWidth', 2);
-        if i <= 4
-            set(single, 'FaceColor', 'k');
-        elseif i <= 7
-            set(single, 'FaceColor', 'b');
-        elseif i == 8
-            set(single, 'FaceColor', 'c');
-        else
-            set(single, 'FaceColor', 'w');
-        end
-    end
-    hold off
-    lab = {' ', 'Nasality', 'Vowel height', 'Manner', 'Voicing', 'Contour',...
-        'Vowel place', 'Vowel length', 'Affrication', 'Sibilance', 'Consonant Place', ' '};
-    title('Phonemegram');
-    set(gca, 'XLim', [0 11]);
-    set(gca, 'XTickLabel', lab);
-    axis = gca;
-    axis.XTick = [0 1 2 3 4 5 6 7 8 9 10 11];
-    axis.XTickLabelRotation = 30;
-    set(gca, 'YLim', [0 100]);
-    ylabel('Percent Correct');
-    pos = get(gca, 'Position');
-    pos(1) = pos(1) - 0.055;
-    pos(3) = pos(3) + 0.05;
-    set(gca, 'Position', pos);
+    % subplot(2,2,1);
+    % histvals = zeros(1,10);
+    % hold on
+    % for i = 1:10
+    %     histvals(i) = pm_values(i);
+    %     single = bar(i,histvals(i));
+    %     set(single, 'LineWidth', 2);
+    %     if i <= 4
+    %         set(single, 'FaceColor', 'k');
+    %     elseif i <= 7
+    %         set(single, 'FaceColor', 'b');
+    %     elseif i == 8
+    %         set(single, 'FaceColor', 'c');
+    %     else
+    %         set(single, 'FaceColor', 'w');
+    %     end
+    % end
+    % hold off
+    % lab = {' ', 'Nasality', 'Vowel height', 'Manner', 'Voicing', 'Contour',...
+    %     'Vowel place', 'Vowel length', 'Affrication', 'Sibilance', 'Consonant Place', ' '};
+    % title('Phonemegram');
+    % set(gca, 'XLim', [0 11]);
+    % set(gca, 'XTickLabel', lab);
+    % axis = gca;
+    % axis.XTick = [0 1 2 3 4 5 6 7 8 9 10 11];
+    % axis.XTickLabelRotation = 30;
+    % set(gca, 'YLim', [0 100]);
+    % ylabel('Percent Correct');
+    % pos = get(gca, 'Position');
+    % pos(1) = pos(1) - 0.055;
+    % pos(3) = pos(3) + 0.05;
+    % set(gca, 'Position', pos);
 	
 % % %     %%%Added Sept 2021
 % % %     %%%Data for phonemegram
@@ -611,7 +623,8 @@ for casenum = 1:length(allData)
 %        fprintf(fileID1,"%s\t%f \n",lab{1+i},histvals(i));
 %     end
     
-    subplot(2,2,2);
+    %subplot(2,2,2);
+    subplot(2,4,[2 3])
 	title('Vowels')
 	xlabel('Place')
 	set(gca,'XLim',[0 8])
@@ -632,10 +645,12 @@ for casenum = 1:length(allData)
     subplot(2,2,3)
 	title('Consonants (Voiced)')
 	xlabel('Place')
-	set(gca,'Xlim',[0 7])
+	%set(gca,'Xlim',[0 7])
+    set(gca,'Xlim',[0.5 8.5], 'XTick', 1:8)
 	ax = gca;
-	ax.XTickLabelRotation = 20;
-	set(gca,'Xticklabel',{' ', 'Bilabial', 'Labiodental', 'Lingadental', 'Alveolar', 'Palatal', 'Velar', '  '});
+	ax.XTickLabelRotation = 45;
+	%set(gca,'Xticklabel',{' ', 'Bilabial', 'Labiodental', 'Lingadental', 'Alveolar', 'Palatal', 'Velar', '  '});
+    set(gca,'Xticklabel',{'Bilabial','Labiodental','Dental','Alveolar','Postalveolar','Palatal','Velar','Glottal'});
 	label_h = ylabel('Manner');
     label_h.Position(1)=-0.75;
     label_h.Position(2)=4;
@@ -654,13 +669,15 @@ for casenum = 1:length(allData)
 	subplot(2,2,4);
 	title('Consonants (Unvoiced)')
 	xlabel('Place')
-	set(gca,'Xlim',[0 7])
-	ax = gca;
-	ax.XTickLabelRotation = 20;
-	set(gca,'Xticklabel',{' ', 'Bilabial', 'Labiodental', 'Lingadental', 'Alveolar', 'Palatal', 'Velar', '  '});
-	label_h = ylabel('Manner');
-    label_h.Position(1)=-0.75;
-    label_h.Position(2)=4;
+	%set(gca,'Xlim',[0 7])
+	set(gca,'Xlim',[0.5 8.5], 'XTick', 1:8)
+    ax = gca;
+	ax.XTickLabelRotation = 45;
+	%set(gca,'Xticklabel',{' ', 'Bilabial', 'Labiodental', 'Lingadental', 'Alveolar', 'Palatal', 'Velar', '  '});
+	set(gca,'Xticklabel',{'Bilabial','Labiodental','Dental','Alveolar','Postalveolar','Palatal','Velar','Glottal'});
+    % label_h = ylabel('Manner');
+    % label_h.Position(1)=-0.75;
+    % label_h.Position(2)=4;
 	set(gca,'ylim',[0 6])
 	ax = gca;
 	ax.YTickLabelRotation = 60;
@@ -689,9 +706,9 @@ disp(stats)
 
 % % % %%%Added Sept 2021
 % fclose(fileID1);
-% fclose(fileID2);
-% fclose(fileID3);
-% fclose(fileID4);
+ fclose(fileID2);
+ fclose(fileID3);
+ fclose(fileID4);
 % fclose(fileID5);
 
 end
@@ -839,4 +856,17 @@ for i = 1 : length(stimph)
 end
 
 
+end
+
+function c = labelColor(score, ax)
+% black text on light dots, white text on dark dots
+cmap = colormap(ax);
+idx  = round(score/100*(size(cmap,1)-1)) + 1;
+idx  = max(1, min(size(cmap,1), idx));
+rgb  = cmap(idx,:);
+if 0.299*rgb(1) + 0.587*rgb(2) + 0.114*rgb(3) < 0.5
+    c = 'w';
+else
+    c = 'k';
+end
 end
