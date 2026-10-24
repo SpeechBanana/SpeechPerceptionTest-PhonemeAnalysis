@@ -6,6 +6,9 @@ function [pScores] = phoneme_analysis_fscore(allData,wpo,mult)
 showArrows = true;   % set to false for the class version
 load splitCMUdict.mat
 load variables.mat
+phonemeSet = {'AA','AE','AH','AO','AW','AY','B','CH','D','DH','EH','ER','EY', ...
+    'F','G','HH','IH','IY','JH','K','L','M','N','NG','OW','OY','P','R','S', ...
+    'SH','T','TH','UH','UW','V','W','Y','Z','ZH'};
 
 % nontarget = {146/'a', 'the', 'of', 'A', 'The', 'Of'}; % will remove non-target words
 % nontarget = {'a', 'of', 'A', 'Of'};
@@ -99,6 +102,23 @@ for casenum = 1:length(allData)
 		reals{z} = stimWords;
 		responses{z} = responseWords;
     end
+
+    %%% Added Oct 2026: check every word against the CMU dictionary before
+    %%% scoring; typos are retyped, non-words given as ~word or # phonemes
+    for z = 1:num
+        newW = fixWords(reals{z}, 'stimulus', z, Name, splitCMUdict, phonemeSet);
+        if ~isequal(newW, reals{z})
+            reals{z} = newW;
+            Stim{z} = lower(strjoin(newW, ' '));
+        end
+        if ~(numel(responses{z}) == 1 && isempty(responses{z}{1}))
+            newW = fixWords(responses{z}, 'response', z, Name, splitCMUdict, phonemeSet);
+            if ~isequal(newW, responses{z})   % a typo was retyped
+                responses{z} = newW;
+                Response{z} = lower(strjoin(newW, ' '));
+            end
+        end
+    end
     
     for z = 1:num
         %compare response and stimulus words to get # of words correct
@@ -133,22 +153,7 @@ for casenum = 1:length(allData)
 		if isKey(splitCMUdict, reals{z}{k})
                    real2{end+1} = splitCMUdict(reals{z}{k});
                 else
-                fprintf('The true word %s was not found. What is its phoneme represtimation?\n', responses{z}{k});
-                isWord = 0;
-                while not(isWord)
-                    manual = input('(Separate phonemes with spaces. To look up a word in the CMUdict, type ONLY "#word".\n For example, if the problem word is KINTS then look up a similar word like HINTS\n in the CMU Dictionary website and enter the modified phoneme wih H replaced by K.)\n', 's');
-                    if(isempty(strfind(manual, '#')))
-                        real2{end+1} = upper(manual);
-                        isWord = 1;
-                    else
-                        manual = upper(strtrim(manual(regexp(manual, '[a-zA-Z\s'']'))));
-                        if isKey(splitCMUdict, manual)
-                            fprintf('%s: %s\n', manual, splitCMUdict(manual))
-                        else
-                            fprintf('%s is not a word in the CMUdict.\n', manual)
-                        end
-                    end
-                end
+                real2{end+1} = askPhonemes(reals{z}{k}, 'stimulus', splitCMUdict);
                 continue;
             end
 		end
@@ -168,22 +173,7 @@ for casenum = 1:length(allData)
             if isKey(splitCMUdict, responses{z}{k})
                 response2{end+1} = splitCMUdict(responses{z}{k});
             elseif not(isempty(responses{z}{k}))
-                fprintf('The response word %s was not found. What is its phoneme represtimation?\n', responses{z}{k});
-                isWord = 0;
-                while not(isWord)
-                    manual = input('(Separate phonemes with spaces. To look up a word in the CMUdict, type ONLY "#word".\n For example, if the problem word is KINTS then look up a similar word like HINTS\n in the CMU Dictionary website and enter the modified phoneme wih H replaced by K.)\n', 's');
-                    if(isempty(strfind(manual, '#')))
-                        response2{end+1} = upper(manual);
-                        isWord = 1;
-                    else
-                        manual = upper(strtrim(manual(regexp(manual, '[a-zA-Z\s'']'))));
-                        if isKey(splitCMUdict, manual)
-                            fprintf('%s: %s\n', manual, splitCMUdict(manual))
-                        else
-                            fprintf('%s is not a word in the CMUdict.\n', manual)
-                        end
-                    end
-                end
+                response2{end+1} = askPhonemes(responses{z}{k}, 'response', splitCMUdict);
                 continue;
             end
         end
@@ -868,5 +858,131 @@ if 0.299*rgb(1) + 0.587*rgb(2) + 0.114*rgb(3) < 0.5
     c = 'w';
 else
     c = 'k';
+end
+end
+
+function ph = askPhonemes(word, kind, splitCMUdict)
+% Asks for the phonemes of a word that is not in the CMU dictionary.
+%   ~ word        use the phonemes of a similar real word, e.g. ~ kits
+%   # K IH N T S  type the phonemes yourself (the # is optional)
+%   ?             list the phoneme codes with example words
+phonemeSet = {'AA','AE','AH','AO','AW','AY','B','CH','D','DH','EH','ER','EY', ...
+    'F','G','HH','IH','IY','JH','K','L','M','N','NG','OW','OY','P','R','S', ...
+    'SH','T','TH','UH','UW','V','W','Y','Z','ZH'};
+fprintf('\nThe %s word %s is not in the CMU dictionary.\n', kind, upper(word));
+fprintf('  type ~ and the closest real word     e.g.   ~ kits\n');
+fprintf('  or # and its phoneme codes           e.g.   # K IH N T S\n');
+fprintf('  (type ? to see the phoneme codes)\n');
+while true
+    answer = strtrim(input('Your answer: ', 's'));
+    if isempty(answer)
+        continue
+    end
+    if answer(1) == '?'
+        showPhonemeKey();
+        continue
+    end
+    if answer(1) == '~'
+        txt = answer(2:end);
+        txt = strtrim(txt(regexp(txt, '[a-zA-Z\s'']')));
+        w = upper(strsplit(txt));
+        if isempty(txt) || numel(w) ~= 1 || ~isKey(splitCMUdict, w{1})
+            fprintf('Please type ~ and ONE real English word, e.g. ~ kits\n');
+            continue
+        end
+        ph = splitCMUdict(w{1});
+        fprintf('  %s will be scored as %s:  %s\n', upper(word), w{1}, ph);
+        return
+    end
+    if answer(1) == '#'
+        answer = answer(2:end);
+    end
+    p = strsplit(upper(strtrim(answer)));
+    p = regexprep(p, '\d', '');          % drop stress digits if typed
+    if isempty(p{1}) || ~all(ismember(p, phonemeSet))
+        fprintf('Please use phonemes from the CMU list (type ? to see them), e.g. # K IH N T S\n');
+        continue
+    end
+    ph = strjoin(p, ' ');
+    return
+end
+end
+
+
+function showPhonemeKey()
+% CMU phoneme codes, each with common example words
+fprintf('\nVOWELS\n');
+fprintf('  AA  hot, father     AE  cat, bad       AH  but, cup       AO  law, saw\n');
+fprintf('  AW  cow, out        AY  my, time       EH  bed, ten       ER  her, bird\n');
+fprintf('  EY  day, make       IH  sit, big       IY  see, eat       OW  go, home\n');
+fprintf('  OY  boy, toy        UH  book, good     UW  two, food\n');
+fprintf('CONSONANTS\n');
+fprintf('  B  bat     CH  chair   D  dog     DH  this    F  fish    G  go\n');
+fprintf('  HH hat     JH  jump    K  cat     L   leg     M  man     N  no\n');
+fprintf('  NG sing    P   pen     R  red     S   sun     SH ship    T  top\n');
+fprintf('  TH think   V   van     W  wet     Y   yes     Z  zoo     ZH measure\n');
+fprintf('Example:  "kints"  ->  # K IH N T S\n\n');
+end
+
+function words = fixWords(words, kind, z, Name, splitCMUdict, phonemeSet)
+% Checks every word against the CMU dictionary BEFORE scoring (as in the
+% lab version). For each missing word, either retype the word(s) meant
+% (a typo, or words run together) or, for a real non-word, give
+%   ~ word        the closest real word, whose phonemes are used
+%   # K IH N T S  the phonemes themselves        (? lists the codes)
+% Answers are added to splitCMUdict (a handle), so a word is asked once only.
+j = 1;
+while j <= numel(words)
+    w = words{j};
+    if isempty(w) || isKey(splitCMUdict, w)
+        j = j + 1;
+        continue
+    end
+    fprintf('\n--------------------------------------------------\n');
+    fprintf('%s, item %d (%s)\n', Name, z, kind);
+    fprintf('  Words:  %s\n', lower(strjoin(words, ' ')));
+    fprintf('  Problem word:  %s  (not in the dictionary)\n\n', w);
+    fprintf('  If it is a typo or words run together, type the word(s) meant:\n');
+    fprintf('      e.g.   the cat\n');
+    fprintf('  If it really is a non-word:\n');
+    fprintf('      type ~ and the closest real word     e.g.   ~ kits\n');
+    fprintf('      or # and its phoneme codes           e.g.   # K IH N T S\n');
+    fprintf('      (type ? to see the phoneme codes)\n');
+    fprintf('--------------------------------------------------\n');
+    answer = strtrim(input('Your answer: ', 's'));
+    if isempty(answer)
+        continue
+    end
+    if answer(1) == '?'
+        showPhonemeKey();
+    elseif answer(1) == '~'
+        txt = answer(2:end);
+        txt = strtrim(txt(regexp(txt, '[a-zA-Z\s'']')));
+        r = upper(strsplit(txt));
+        if isempty(txt) || numel(r) ~= 1 || ~isKey(splitCMUdict, r{1})
+            fprintf('Please type ~ and ONE real English word, e.g. ~ kits\n');
+            continue
+        end
+        splitCMUdict(w) = splitCMUdict(r{1});
+        fprintf('  %s will be scored as %s:  %s\n', w, r{1}, splitCMUdict(w));
+        j = j + 1;
+    elseif answer(1) == '#'
+        p = strsplit(upper(strtrim(answer(2:end))));
+        p = regexprep(p, '\d', '');          % drop stress digits if typed
+        if isempty(p{1}) || ~all(ismember(p, phonemeSet))
+            fprintf('Please use phonemes from the CMU list (type ? to see them), e.g. # K IH N T S\n');
+            continue
+        end
+        splitCMUdict(w) = strjoin(p, ' ');
+        j = j + 1;
+    else
+        txt = strtrim(answer(regexp(answer, '[a-zA-Z\s'']')));
+        if isempty(txt)
+            continue
+        end
+        newWords = upper(strsplit(txt));
+        words = [words(1:j-1), newWords, words(j+1:end)];
+        % do not advance j: the retyped word(s) are checked again
+    end
 end
 end
